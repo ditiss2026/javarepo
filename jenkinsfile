@@ -16,6 +16,23 @@ pipeline {
                 sh 'java Hello.java'
             }
         }
+	
+	stage('Docker Build') {
+            steps {
+                echo 'Building Docker Image...'
+                // Build the image and tag it as 'my-java-app'
+                sh 'docker build -t my-java-app .'
+            }
+        }
+
+        stage('Docker Run') {
+            steps {
+                echo 'Running Docker Container...'
+                // --rm removes the container after it finishes running
+                sh 'docker run --rm my-java-app'
+            }
+        }
+
 
       } // This closes the 'stages' block containing all 3 stages
 
