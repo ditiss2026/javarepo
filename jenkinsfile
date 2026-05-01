@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Change this to your actual DockerHub username
-        DOCKERHUB_USER = 'your-dockerhub-username'
+        DOCKERHUB_USER = 'ditisscdac'
         APP_NAME = 'javarepo'
         IMAGE_TAG = "${env.BUILD_NUMBER}" // Uses build number for versioning
     }
