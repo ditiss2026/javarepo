@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', 
+                    credentialsId: 'github-token', 
+                    url: 'https://github.com/ditiss2026/javarepo.git'
+            }
+        }
+
+        stage('Compile') {
+            steps {
+                echo 'Compiling Java program...'
+                sh 'java Hello.java'
+            }
+        }
+
+      } // This closes the 'stages' block containing all 3 stages
+
+    post {
+        success {
+            echo 'Pipeline executed successfully!'
+        }
+        failure {
+            echo 'Something went wrong.'
+        }
+    }
+}
