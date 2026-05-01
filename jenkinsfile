@@ -44,6 +44,33 @@ pipeline {
                 }
             }
         }
+
+	stage('Deploy to K8s') {
+    steps {
+        script {
+            // Apply the deployment and service
+            sh 'kubectl apply -f deployment.yml'
+            
+            // Force a rollout to pull the newest 'latest' image
+            sh 'kubectl rollout restart deployment/java-app-deployment'
+        }
+    }
+}
+
+stage('Verify Deployment') {
+    steps {
+        script {
+            echo "Waiting for pods to be ready..."
+            sh 'kubectl get pods -l app=java-hello-world'
+            sh 'kubectl get svc java-app-service'
+            
+            // Final check to see if pods are actually 'Running'
+            sh "kubectl wait --for=condition=ready pod -l app=java-hello-world --timeout=60s"
+        }
+    }
+}
+
+
     }
 
     post {
