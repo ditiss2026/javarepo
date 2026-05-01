@@ -1,47 +1,57 @@
 pipeline {
     agent any
 
+    environment {
+        // Change this to your actual DockerHub username
+        DOCKERHUB_USER = 'your-dockerhub-username'
+        APP_NAME = 'javarepo'
+        IMAGE_TAG = "${env.BUILD_NUMBER}" // Uses build number for versioning
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', 
-                    credentialsId: 'github-token', 
-                    url: 'https://github.com/ditiss2026/javarepo.git'
+                git branch: 'main', url: 'https://github.com/ditiss2026/javarepo.git'
             }
         }
 
         stage('Compile') {
             steps {
-                echo 'Compiling Java program...'
-                sh 'java Hello.java'
+                sh 'javac Hello.java'
             }
         }
-	
-	stage('Docker Build') {
+
+        stage('Docker Build & Tag') {
             steps {
-                echo 'Building Docker Image...'
-                // Build the image and tag it as 'my-java-app'
-                sh 'docker build -t my-java-app .'
+                echo 'Building and Tagging Image...'
+                // Build the image with the DockerHub naming convention
+                sh "docker build -t ${DOCKERHUB_USER}/${APP_NAME}:${IMAGE_TAG} ."
+                // Also tag it as 'latest'
+                sh "docker tag ${DOCKERHUB_USER}/${APP_NAME}:${IMAGE_TAG} ${DOCKERHUB_USER}/${APP_NAME}:latest"
             }
         }
 
-        stage('Docker Run') {
+        stage('Docker Push') {
             steps {
-                echo 'Running Docker Container...'
-                // --rm removes the container after it finishes running
-                sh 'docker run --rm my-java-app'
+                // Use the Credentials ID you created in Step 1
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials',
+                                                  passwordVariable: 'DOCKER_PASS',
+                                                  usernameVariable: 'DOCKER_USER')]) {
+
+                    echo 'Logging into DockerHub...'
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
+
+                    echo 'Pushing Image...'
+                    sh "docker push ${DOCKERHUB_USER}/${APP_NAME}:${IMAGE_TAG}"
+                    sh "docker push ${DOCKERHUB_USER}/${APP_NAME}:latest"
+                }
             }
-        }
-
-
-      } // This closes the 'stages' block containing all 3 stages
-
-    post {
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Something went wrong.'
         }
     }
-}
+
+    post {
+        always {
+            echo 'Cleaning up local images...'
+            // Optional: Remove local images to save disk space
+            sh "docker rmi ${DOCKERHUB_USER}/${APP_NAME}:${IMAGE_TAG} || true"
+
